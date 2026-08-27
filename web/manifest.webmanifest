@@ -1,0 +1,22 @@
+{
+  "name": "مسار عينات — تطبيق السائق",
+  "short_name": "مسار عينات",
+  "description": "تطبيق السائق لتنفيذ رحلات نقل العينات الطبية وتوثيق الالتقاط والتسليم",
+  "start_url": "/driver",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#10241f",
+  "theme_color": "#10241f",
+  "categories": ["medical", "productivity", "navigation"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%231f5c4a'/%3E%3Ctext y='350' x='256' text-anchor='middle' font-size='280' font-family='sans-serif' fill='white' font-weight='bold'%3E%D9%85%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

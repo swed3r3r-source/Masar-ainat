@@ -1,0 +1,55 @@
+# OSRM ذاتي الاستضافة لمنطقة السعودية — أزمنة ومسافات طرق حقيقية.
+#
+# التشغيل مرحلتان: تجهيز البيانات مرة واحدة (osrm-extract/partition/customize)
+# ثم تشغيل الخدمة (osrm-routed). المرحلة الأولى ثقيلة ولا تتكرر إلا عند
+# تحديث خريطة OpenStreetMap.
+#
+#   ١) تنزيل الخريطة:   ./fetch-map.sh
+#   ٢) التجهيز:          docker compose --profile prepare up --abort-on-container-exit
+#   ٣) التشغيل:          docker compose up -d osrm
+#   ٤) التحقق:           curl "http://localhost:5000/route/v1/driving/41.04,30.98;43.498,29.62?overview=false"
+#
+# ملاحظة: خوارزمية MLD (متعددة المستويات) — أسرع في التجهيز وتدعم
+# التحديث الجزئي، وهي المناسبة لمصفوفات /table الكبيرة التي يستعملها المحرك.
+
+services:
+  osrm-extract:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    profiles: ["prepare"]
+    volumes: ["./data:/data"]
+    command: >
+      osrm-extract -p /opt/car.lua /data/saudi-arabia-latest.osm.pbf
+
+  osrm-partition:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    profiles: ["prepare"]
+    depends_on: { osrm-extract: { condition: service_completed_successfully } }
+    volumes: ["./data:/data"]
+    command: osrm-partition /data/saudi-arabia-latest.osrm
+
+  osrm-customize:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    profiles: ["prepare"]
+    depends_on: { osrm-partition: { condition: service_completed_successfully } }
+    volumes: ["./data:/data"]
+    command: osrm-customize /data/saudi-arabia-latest.osrm
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    restart: unless-stopped
+    volumes: ["./data:/data"]
+    # max-table-size يجب أن يساوي أو يتجاوز أكبر عدد عقد في خطة واحدة:
+    # شحنة = عقدتان، + عقدة بداية لكل مركز. ٢٠٠٠ تكفي ~٩٩٠ شحنة في التشغيل
+    # الواحد. ارفعه إن كانت خططك أكبر — وإلا سيعيد OSRM خطأ TooBig.
+    command: >
+      osrm-routed --algorithm mld --max-table-size 2000
+      --max-matching-size 100 /data/saudi-arabia-latest.osrm
+    # الخدمة داخلية فقط: لا تُنشر على الإنترنت — لا مصادقة فيها أصلًا.
+    ports: ["127.0.0.1:5000:5000"]
+    healthcheck:
+      test: ["CMD-SHELL",
+             "wget -qO- 'http://localhost:5000/route/v1/driving/46.6,24.7;46.7,24.8?overview=false' | grep -q '\"code\":\"Ok\"' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

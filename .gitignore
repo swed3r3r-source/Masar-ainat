@@ -1,0 +1,29 @@
+# أسرار — لا تُرفع أبدًا
+.env
+.env.*
+!.env.example
+
+# حالة التشغيل: نسخ احتياطية، مستندات مخزَّنة، سجلات، أرشيف WAL، لقطات، مرفوعات
+var/
+
+# البيئة التجريبية: الأسرار والشهادات تُولَّد عند التشغيل ولا تُرفع
+deploy/staging/.env.staging
+!deploy/staging/.env.staging.example
+deploy/staging/certs/
+!deploy/staging/certs/.gitkeep
+
+# ملف القفل يُولَّد على خادم متصل بـPyPI (scripts/lock_dependencies.sh)
+# ويُلتزم به في المستودع عند توليده — أزل السطر التالي حينها.
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# بيانات خرائط OSRM (مئات الميغابايت، تُنزَّل بـ fetch-map.sh)
+deploy/osrm/data/
+
+# محلي
+.DS_Store
+*.swp

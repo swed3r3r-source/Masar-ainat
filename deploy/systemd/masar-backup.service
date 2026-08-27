@@ -1,0 +1,16 @@
+[Unit]
+Description=مسار عينات — نسخة احتياطية كاملة
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=masar
+Group=masar
+WorkingDirectory=/opt/masar
+EnvironmentFile=/etc/masar/masar.env
+ExecStart=/opt/masar/scripts/backup.sh dump
+ExecStartPost=/opt/masar/scripts/backup.sh prune 14
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/backups/masar

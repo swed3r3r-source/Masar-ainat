@@ -1,0 +1,13 @@
+[Unit]
+Description=مسار عينات — التحقق من صلاحية الاستعادة
+Documentation=نسخة بلا استعادة مُثبتة ليست نسخة احتياطية
+
+[Service]
+Type=oneshot
+User=masar
+Group=masar
+WorkingDirectory=/opt/masar
+EnvironmentFile=/etc/masar/masar.env
+ExecStart=/opt/masar/scripts/backup.sh verify
+NoNewPrivileges=true
+PrivateTmp=true

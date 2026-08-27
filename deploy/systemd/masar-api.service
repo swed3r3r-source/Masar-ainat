@@ -1,0 +1,56 @@
+[Unit]
+Description=مسار عينات — خادم التطبيق
+Documentation=file:///opt/masar/docs/11-deployment-runbook.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=masar
+Group=masar
+WorkingDirectory=/opt/masar
+EnvironmentFile=/etc/masar/masar.env
+Environment=PYTHONPATH=/opt/masar/packages
+Environment=PYTHONUNBUFFERED=1
+
+# فحص الجاهزية قبل الإقلاع: إعداد ناقص أو ضعيف يمنع بدء الخدمة بدل أن يمر
+# بصمت ويتحول لاحقًا إلى حادثة. الفشل هنا مقصود ومطلوب.
+ExecStartPre=/usr/bin/python3 /opt/masar/scripts/preflight.py
+# عامل HTTP واحد مقصود: محدِّد المعدل وناقل SSE وحافلات المهام الحالية
+# داخل الذاكرة وليست موزعة بين العمليات. التخطيط نفسه يوازي العمل عبر
+# MASAR_SOLVE_WORKERS عند الحاجة.
+ExecStart=/usr/bin/python3 -m uvicorn masar_api.app:app \
+    --host 127.0.0.1 --port ${MASAR_PORT} \
+    --workers 1 --log-level info \
+    --no-server-header --proxy-headers --forwarded-allow-ips=127.0.0.1
+
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+# ------------------------------------------------------------- التقييد -----
+# الخدمة تتعامل مع بيانات صحية حساسة؛ تقييدها يقلّل أثر أي ثغرة تنفيذ شيفرة.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/var/lib/masar /var/log/masar
+UMask=0027
+
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
